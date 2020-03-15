@@ -1,0 +1,44 @@
+#Download RSS feed (tac reverses the feed)
+#wget -q -O- "http://aliceisntdead.libsyn.com/rss" | grep "http.*[Mm][Pp]3" | grep -o 'url="[^"]*' | grep -o '[^"]*$' | tac > tmpRSS.txt
+#wget -q -O- "http://www.tested.com/podcast-xml/this-is-only-a-test" | grep "http.*[Mm][Pp]3" | grep -o 'url="[^"]*' | grep -o '[^"]*$' | tac > tmpRSS.txt
+wget -q -O- "http://wolf359radio.libsyn.com/rss" | grep "http.*[Mm][Pp]3" | grep -o 'url="[^"]*' | grep -o '[^"]*$' | tac > tmpRSS.txt
+
+#Create clean links file
+cat tmpRSS.txt | cut -d "?" -f1 > CleanLinksRSS.txt
+#Delete unclean links file
+rm tmpRSS.txt
+
+
+#Get number of lines in CleanLinksRSS.txt
+podcastCount="$(cat CleanLinksRSS.txt | wc -l)"
+
+#Get length of above int
+intLen=${#podcastCount}
+
+#Set Length for Prepended Episode Number
+prependLen=$((intLen+2))
+#n=`printf %01d $n`
+
+n=1
+while read link; do
+    #Create Episode Number
+    epNo=0000000000$n
+    epNo=$(echo -n $epNo | tail -c $prependLen)
+
+    #Create File Name from section of link from (-F) last ($NF) instance of '/''
+    tmpFilename=$(echo $link | awk -F'/' '{print $NF}')
+
+    #Add Episode Number to filename
+    filename=$epNo
+    filename+="_$tmpFilename"
+    echo $filename
+
+    #Get File with nice file name
+    wget -O $filename $link
+
+    #Increment Episode Number
+    n=$((n+1))
+done <CleanLinksRSS.txt
+
+# GNU sed only, creates a temporary file
+sed -i '1d' CleanLinksRSS.txt
